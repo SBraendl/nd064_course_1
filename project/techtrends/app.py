@@ -2,20 +2,25 @@ import sqlite3
 
 from flask import Flask, jsonify, json, render_template, request, url_for, redirect, flash
 from werkzeug.exceptions import abort
+import logging
+
+connection_count = 0
 
 # Function to get a database connection.
 # This function connects to database with the name `database.db`
 def get_db_connection():
     connection = sqlite3.connect('database.db')
     connection.row_factory = sqlite3.Row
+    global connection_count
+    connection_count += 1
     return connection
 
 # Function to get a post using its ID
 def get_post(post_id):
     connection = get_db_connection()
     post = connection.execute('SELECT * FROM posts WHERE id = ?',
-                        (post_id,)).fetchone()
-    connection.close()
+                        (post_id,)).fetchone()    
+    connection.close()        
     return post
 
 # Define the Flask application
@@ -36,13 +41,16 @@ def index():
 def post(post_id):
     post = get_post(post_id)
     if post is None:
+      app.logger.info('Article with id' + str(post_id) + ' not found, returning 404!')
       return render_template('404.html'), 404
     else:
+      app.logger.info('Article '+ post["title"] + " retrieved!")
       return render_template('post.html', post=post)
 
 # Define the About Us page
 @app.route('/about')
 def about():
+    app.logger.info('About page requested')
     return render_template('about.html')
 
 # Define the post creation functionality 
@@ -60,11 +68,29 @@ def create():
                          (title, content))
             connection.commit()
             connection.close()
-
+            app.logger.info('Article created '+title)
             return redirect(url_for('index'))
 
     return render_template('create.html')
 
+@app.route('/healthz')
+def healthz():
+    return 'Ok - healthy', 200
+
+@app.route('/metrics')
+def metrics():
+    global connection_count
+    connection = get_db_connection()
+    posts = connection.execute('SELECT count(*) FROM posts').fetchone()[0]    
+    connection.close()
+    metrics = {
+        "db_connection_count": connection_count, 
+        "post_count": posts
+        }
+    return metrics, 200
+
+
 # start the application on port 3111
-if __name__ == "__main__":
+if __name__ == "__main__":   
+   logging.basicConfig(format='%(levelname)s %(asctime)s, %(message)s',level=logging.DEBUG)    
    app.run(host='0.0.0.0', port='3111')
