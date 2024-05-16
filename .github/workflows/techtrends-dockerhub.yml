@@ -27,4 +27,4 @@ jobs:
         with:
           context: "{{defaultContext}}:project/techtrends"
           push: true
-          tags: techtrends:latest
+          tags: lewstefanbraendl/techtrends:latest
