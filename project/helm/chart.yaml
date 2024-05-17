@@ -1,9 +1,0 @@
-apiVersion: v1
-name: techtrends
-description: techtrends helm chart
-version: 1.0.0
-keywords:
-  - techtrends
-maintainers:
-  - name: Stefan Brändl
-    email: S.Braendl83@gmail.com
